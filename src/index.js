@@ -1,12 +1,51 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import App from './App';
-import * as serviceWorker from './serviceWorker';
+import {Provider} from 'react-redux';
+import createStore from './Redux/Store/Store';
+import {firebase} from "./Firebase/firebase";
+import {loginAction,startAddUser} from './Redux/Actions/AuthAction';
+import {history} from './Route/Route';
+import './assets/styles/bootstrap.min.css'
+import './index.css';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+const store = createStore();
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+const jsx =
+    (<Provider store={store}>
+        <App/>
+    </Provider>)
+
+ReactDOM.render(<div>loading...</div>, document.getElementById('root'));
+
+
+let isRender = false;
+
+
+const appRender = () => {
+    if(!isRender){
+        ReactDOM.render(jsx, document.getElementById('root'));
+        isRender = true;
+    }
+};
+
+
+firebase.auth().onAuthStateChanged((user)=>{
+    if(user){
+        const profile = {
+            name:user.displayName,
+            email:user.email,
+            userId:user.uid,
+            photo:user.photoURL
+        }
+        store.dispatch(loginAction());
+        store.dispatch(startAddUser(profile));
+        appRender();
+        if(history.location.pathname === '/login'){
+            history.push('/dashboard');
+        }
+    }
+    else{
+        appRender();
+    }
+});
